@@ -1,219 +1,187 @@
-import React, { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { editTransaction } from '../../redux/transactions/operations';
+import { selectTransactionCategories } from '../../redux/transactions/selectors';
+import styles from './TransactionModal.module.css';
 
-// Validation
-const schema = yup
-  .object({
-    amount: yup
-      .number()
-      .typeError("Amount must be a number")
-      .positive("Amount must be positive")
-      .required("Amount is required"),
-    category: yup.string().required("Category is required"),
-    description: yup.string().max(200, "Description is too long"),
-    date: yup.date().typeError("Invalid date").required("Date is required"),
-    type: yup.string().oneOf(["income", "expense"]).required("Type is required"),
-  })
-  .required();
-
-/**
- * Props:
- * - isOpen: boolean  -> Modal açık mı?
- * - onClose: () => void
- * - onSave: (data) => void
- * - transaction: { amount, category, description, date, type } | undefined
- */
-function EditTransactionModal({ isOpen, onClose, onSave, transaction }) {
-  // 🔒 KORUMA — Açık değilse ya da transaction yoksa hiç render etme
-  if (!isOpen && !transaction) return null;
-
-  // ESC ile kapatma
-  useEffect(() => {
-    const onEsc = (e) => {
-      if (e.key === "Escape" && typeof onClose === "function") onClose();
-    };
-    document.addEventListener("keydown", onEsc);
-    return () => document.removeEventListener("keydown", onEsc);
-  }, [onClose]);
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm({
-    resolver: yupResolver(schema),
-    mode: "onChange",
-    defaultValues: {
-      amount: transaction?.amount ?? "",
-      category: transaction?.category ?? "",
-      description: transaction?.description ?? "",
-      date: transaction?.date ? new Date(transaction.date) : null,
-      type: transaction?.type ?? "expense",
-    },
+const EditTransactionModal = ({ isOpen, onClose, transaction }) => {
+  const dispatch = useDispatch();
+  const categories = useSelector(selectTransactionCategories);
+  
+  const [formData, setFormData] = useState({
+    type: 'INCOME',
+    category: '',
+    amount: '',
+    date: '',
+    comment: ''
   });
 
-  const onSubmit = (data) => {
-    if (typeof onSave === "function") onSave(data);
+  useEffect(() => {
+    if (transaction) {
+      setFormData({
+        type: transaction.type || 'INCOME',
+        category: transaction.categoryId || '',
+        amount: Math.abs(transaction.amount || 0), // Show as absolute value
+        date: transaction.transactionDate || new Date().toISOString().split('T')[0],
+        comment: transaction.comment || ''
+      });
+    }
+  }, [transaction]);
+
+  // Automatically assign category for INCOME
+  useEffect(() => {
+    if (formData.type === 'INCOME') {
+      const incomeCategory = categories?.find(cat => cat.type === 'INCOME');
+      if (incomeCategory) {
+        setFormData(prev => ({
+          ...prev,
+          category: incomeCategory.id
+        }));
+      }
+    }
+  }, [formData.type, categories]);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.category || !formData.amount || !formData.date) {
+      alert('Please fill out all fields');
+      return;
+    }
+
+    try {
+      // Adjust amount based on transaction type
+      const baseAmount = Number(formData.amount);
+      const amount = formData.type === 'EXPENSE' ? -baseAmount : baseAmount;
+      
+      const transactionData = {
+        transactionDate: formData.date,
+        type: formData.type,
+        categoryId: formData.category,
+        comment: formData.comment,
+        amount: amount // Negative for EXPENSE, positive for INCOME
+      };
+
+      await dispatch(editTransaction({
+        id: transaction.id,
+        updates: transactionData
+      })).unwrap();
+      
+      onClose();
+    } catch (error) {
+      console.error('Error while updating transaction:', error);
+      alert('An error occurred while updating the transaction: ' + error.message);
+    }
+  };
+
+  if (!isOpen || !transaction) return null;
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        zIndex: 1000, // Sayfanın üstüne çıksın ama diğer sayfaları bozmasın
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && typeof onClose === "function") onClose();
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          background: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-        }}
-      >
-        <h3 style={{ marginBottom: 16 }}>Edit Transaction</h3>
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Edit transaction</h2>
+          <button onClick={onClose} className={styles.closeButton}>
+            <svg viewBox="0 0 24 24" fill="none" className={styles.closeIcon}>
+              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Amount */}
-          <label style={{ display: "block", marginBottom: 8 }}>
-            <span style={{ display: "block", marginBottom: 4 }}>Amount</span>
-            <input
-              type="number"
-              step="0.01"
-              {...register("amount")}
-              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-              placeholder="e.g. 120.50"
-            />
-          </label>
-          {errors.amount && (
-            <p style={{ color: "#d33", marginTop: -6, marginBottom: 10 }}>
-              {errors.amount.message}
-            </p>
-          )}
-
-          {/* Category */}
-          <label style={{ display: "block", marginBottom: 8 }}>
-            <span style={{ display: "block", marginBottom: 4 }}>Category</span>
-            <input
-              type="text"
-              {...register("category")}
-              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-              placeholder="e.g. Groceries"
-            />
-          </label>
-          {errors.category && (
-            <p style={{ color: "#d33", marginTop: -6, marginBottom: 10 }}>
-              {errors.category.message}
-            </p>
-          )}
-
-          {/* Description */}
-          <label style={{ display: "block", marginBottom: 8 }}>
-            <span style={{ display: "block", marginBottom: 4 }}>Description (optional)</span>
-            <input
-              type="text"
-              {...register("description")}
-              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-              placeholder="Add a short note"
-            />
-          </label>
-          {errors.description && (
-            <p style={{ color: "#d33", marginTop: -6, marginBottom: 10 }}>
-              {errors.description.message}
-            </p>
-          )}
-
-          {/* Date */}
-          <div style={{ marginBottom: 10 }}>
-            <span style={{ display: "block", marginBottom: 4 }}>Date</span>
-            <Controller
-              name="date"
-              control={control}
-              render={({ field }) => (
-                <DatePicker
-                  selected={field.value}
-                  onChange={(d) => field.onChange(d)}
-                  dateFormat="yyyy-MM-dd"
-                  placeholderText="Select date"
-                  className="input"
-                  wrapperClassName="datepicker-wrapper"
-                  style={{ width: "100%" }}
-                />
-              )}
-            />
-            {errors.date && (
-              <p style={{ color: "#d33", marginTop: 6 }}>
-                {errors.date.message}
-              </p>
-            )}
+        <form onSubmit={handleSubmit} className={styles.form}>
+          {/* Transaction Type Display - Income / Expense side by side */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>Transaction Type</label>
+            <div className={styles.editTypeDisplay}>
+              <span className={`${styles.editTypeText} ${formData.type === 'INCOME' ? styles.active : ''}`}>
+                Income
+              </span>
+              <span className={styles.editTypeSeparator}>/</span>
+              <span className={`${styles.editTypeText} ${formData.type === 'EXPENSE' ? styles.active : ''} ${formData.type === 'EXPENSE' ? styles.expenseType : ''}`}>
+                Expense
+              </span>
+            </div>
           </div>
 
-          {/* Type */}
-          <div style={{ marginBottom: 14 }}>
-            <span style={{ display: "block", marginBottom: 6 }}>Type</span>
-            <label style={{ marginRight: 16 }}>
-              <input type="radio" value="income" {...register("type")} /> Income
-            </label>
-            <label>
-              <input type="radio" value="expense" {...register("type")} /> Expense
-            </label>
-            {errors.type && (
-              <p style={{ color: "#d33", marginTop: 6 }}>
-                {errors.type.message}
-              </p>
-            )}
+          {/* Category Selection - shown based on formData.type */}
+          {formData.type === 'EXPENSE' && (
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Select a category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => handleInputChange('category', e.target.value)}
+                className={styles.select}
+                required
+              >
+                <option value="">Select a category</option>
+                {categories && categories
+                  .filter(cat => cat.type === 'EXPENSE')
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+          )}
+
+          {/* Amount and Date Row */}
+          <div className={styles.row}>
+            <div className={styles.formGroup}>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={formData.amount}
+                onChange={(e) => handleInputChange('amount', e.target.value)}
+                className={styles.input}
+                step="0.01"
+                min="0" // Do not allow negative values
+                required
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+                className={styles.input}
+                required
+              />
+            </div>
           </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 16 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: "1px solid #ddd",
-                background: "#f6f6f6",
-              }}
-            >
-              Cancel
+          {/* Comment */}
+          <div className={styles.formGroup}>
+            <input
+              type="text"
+              placeholder="Comment"
+              value={formData.comment}
+              onChange={(e) => handleInputChange('comment', e.target.value)}
+              className={styles.input}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className={styles.buttonGroup}>
+            <button type="submit" className={styles.saveButton}>
+              SAVE
             </button>
-            <button
-              type="submit"
-              style={{
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: "none",
-                background: "#2f6fed",
-                color: "#fff",
-                fontWeight: 600,
-              }}
-            >
-              Save
+            <button type="button" onClick={onClose} className={styles.cancelButton}>
+              CANCEL
             </button>
           </div>
         </form>
       </div>
     </div>
   );
-}
+};
 
 export default EditTransactionModal;
