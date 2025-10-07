@@ -179,7 +179,7 @@
 /* Progress Bar Styles */
 .progressContainer {
   width: 100%;
-  margin-bottom: 15px; /* Biraz azalttım */
+  margin-bottom: 15px;
 }
 
 .progressBar {

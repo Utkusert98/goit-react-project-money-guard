@@ -317,18 +317,18 @@
 
 .editTypeText.active {
   color: #fbbf24;
-  /* Sarı renk - Income için */
+  
 }
 
 .editTypeText:not(.active) {
   color: white;
-  /* Beyaz renk - pasif için */
+  
 }
 
 /* Expense seçiliyse kırmızı yap */
 .editTypeText.active.expenseType {
   color: #ef4444;
-  /* Kırmızı renk - Expense için */
+  
 }
 
 .editTypeSeparator {
