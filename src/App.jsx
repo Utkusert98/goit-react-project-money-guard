@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -5,14 +6,14 @@ import { store, persistor } from './redux/store.js';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { checkAuthStatus } from './redux/auth/operations';
-import LoginPage from './pages/LoginPage/LoginPage';
-import RegisterPage from './pages/RegisterPage/RegisterPage';
+const LoginPage = React.lazy(() => import('./pages/LoginPage/LoginPage'));
+const RegisterPage = React.lazy(() => import('./pages/RegisterPage/RegisterPage'));
 import PrivateRoutes from './routes/PrivateRoutes';
 import RestrictedRoutes from './routes/RestrictedRoutes';
 import { getTransactions } from "./redux/transactions/operations";
-import DashboardPage from './pages/DashboardPage/DashboardPage';
-import StatisticsPage from './pages/StatisticsPage/StatisticsPage';
-import CurrencyPage from './pages/CurrencyPage/CurrencyPage';
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage/DashboardPage'));
+const StatisticsPage = React.lazy(() => import('./pages/StatisticsPage/StatisticsPage'));
+const CurrencyPage = React.lazy(() => import('./pages/CurrencyPage/CurrencyPage'));
 
 import './App.css';
 
@@ -34,7 +35,7 @@ function AppContent() {
   return (
     <Router>
       <div className="App">
-        <Routes>
+        <Suspense fallback={<div>Loading...</div>}><Routes>
           <Route path="/login" element={
             <RestrictedRoutes>
               <LoginPage />
@@ -66,7 +67,7 @@ function AppContent() {
             </PrivateRoutes>
           } />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+        </Routes></Suspense>
       </div>
     </Router>
   );
