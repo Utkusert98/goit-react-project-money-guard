@@ -18,14 +18,14 @@ const Currency = () => {
     dispatch(fetchCurrencyRates());
   }, [dispatch]);
 
-  // Görsel referans: grafiğin 0'dan değil buradan başlaması isteniyor
+  
   const baseValues = { USD: 20.0, EUR: 30.0 };
 
   // SVG ölçüleri
   const VIEW_W = 431;
   const VIEW_H = 281;
-  const CHART_H = 200; // dikey çizim alanı
-  const TOP_PAD = 28;  // etiketler için üst boşluk
+  const CHART_H = 200; 
+  const TOP_PAD = 28;  
   const X_FACTOR = 4.31;
 
   // Güncel kurlar (boşsa fallBack)

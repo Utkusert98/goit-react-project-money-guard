@@ -201,12 +201,12 @@
   .modalOverlay {
     background: transparent;
     backdrop-filter: none;
-    z-index: 999; /* Header'dan düşük z-index */
+    z-index: 999; 
   }
   
   .modal {
     width: 100%;
-    height: calc(100vh - 60px); /* Header yüksekliğini çıkar */
+    height: calc(100vh - 60px);
     border-radius: 0;
     padding: 0;
     margin: 0;
@@ -215,7 +215,7 @@
     box-shadow: none;
     border: none;
     position: fixed;
-    top: 60px; /* Header yüksekliği kadar aşağıdan başla */
+    top: 60px;
     left: 0;
     right: 0;
     bottom: 0;
@@ -273,7 +273,7 @@
 /* Small Mobile (320px width) */
 @media (max-width: 767px) {
   .modal {
-    top: 55px; /* Küçük mobilde header yüksekliği */
+    top: 55px;
     height: calc(100vh - 55px);
     background: rgb(65 66 101 / 50%);
   }

@@ -40,7 +40,7 @@ const FloatingDropdown = ({
   });
 
   const click = useClick(context);
-  // useDismiss'i kaldırıyoruz - modal kapanma sorununa neden oluyor
+  
   const role = useRole(context, { role: 'listbox' });
 
   const { getReferenceProps, getFloatingProps } = useInteractions([

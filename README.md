@@ -66,3 +66,34 @@ kategorilere ayır, grafiklerle analiz et ve bütçeni daha iyi planla! 📊
 
 ------------------------------------------------------------------------
 > 💡 Money Guard ile finansal özgürlüğünü planla! 🚀
+
+
+---
+
+## 🚀 Deployment (GitHub Pages)
+
+1. Repository Settings → Pages: **Deploy from GitHub Actions** veya `gh-pages` branch.
+2. Projede: `npm install` ardından:
+   ```bash
+   npm run build
+   npm run deploy
+   ```
+3. Gerekirse Vite base yolunu .env üzerinden ayarlayın:
+   ```env
+   VITE_BASE_PATH=/goit-react-project-money-guard/
+   ```
+
+## 🔐 Environment
+
+`.env.template` dosyasını `.env` olarak kopyalayıp değerleri doldurun:
+```env
+VITE_API_URL=https://your-backend.example.com
+VITE_APP_NAME=Money Guard
+VITE_BASE_PATH=/
+```
+
+## 🧪 PageSpeed İpuçları
+- Font preconnect/Display swap kullanıldı.
+- Görseller optimize edildi, büyük görsellere `loading="lazy"` ekleyin.
+- Production build ile ölçüm yapın: `npm run build && npx serve dist`
+
